@@ -15,14 +15,14 @@ namespace WinTail
             // this approach to props has no type safety
             // it will compile, but can easily blow up in your face at runtime :(
             // UNCOMMENT THE BELOW TWO LINES, BUILD THE SOLUTION, AND THEN TRY TO RUN IT TO SEE
-            //Props fakeActorProps = Props.Create(typeof(FakeActor));
-            //IActorRef fakeActor = MyActorSystem.ActorOf(fakeActorProps, "fakeActor");
+            Props fakeActorProps = Props.Create(typeof(FakeActor));
+            IActorRef fakeActor = MyActorSystem.ActorOf(fakeActorProps, "fakeActor");
 
             // set up actors, using props (split props onto own line so easier to read)
             Props consoleWriterProps = Props.Create<ConsoleWriterActor>();
             IActorRef consoleWriterActor = MyActorSystem.ActorOf(consoleWriterProps, "consoleWriterActor");
 
-            Props validationActorProps = Props.Create(() => new ValidationActor(consoleWriterActor));
+            Props validationActorProps = Props.Create(() => new FileValidationActor(consoleWriterActor));
             IActorRef validationActor = MyActorSystem.ActorOf(validationActorProps, "validationActor");
             
             Props consoleReaderProps = Props.Create<ConsoleReaderActor>(validationActor);
