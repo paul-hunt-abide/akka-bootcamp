@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Text;
 using Akka.Actor;
 
 namespace WinTail
@@ -58,7 +59,7 @@ namespace WinTail
         private readonly string _filePath;
         private readonly IActorRef _reporterActor;
         private readonly FileObserver _observer;
-        private readonly EventStreamActor _fileStream;
+        private readonly Stream _fileStream;
         private readonly StreamReader _fileStreamReader;
 
         public TailActor(IActorRef reporterActor, string filePath)
@@ -69,11 +70,34 @@ namespace WinTail
             // start watching file for changes
             _observer = new FileObserver(Self, Path.GetFullPath(_filePath));
             _observer.Start();
+
+            _fileStream = new FileStream(Path.GetFullPath(_filePath), FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            _fileStreamReader = new StreamReader(_fileStream, Encoding.UTF8);
+
+            var text = _fileStreamReader.ReadToEnd();
+            Self.Tell(new InitialRead(_filePath, text));
         }
 
         protected override void OnReceive(object message)
         {
-            throw new NotImplementedException();
+            if (message is FileWrite)
+            {
+                var text = _fileStreamReader.ReadToEnd();
+                if (!string.IsNullOrEmpty(text))
+                {
+                    _reporterActor.Tell(text);
+                }                
+            }
+            else if (message is FileError)
+            {
+                var fe = message as FileError;
+                _reporterActor.Tell($"Tail error: {fe.Reason}");
+            }
+            else if (message is InitialRead)
+            {
+                var ir = message as InitialRead;
+                _reporterActor.Tell(ir.Text);
+            }
         }
     }
 }
