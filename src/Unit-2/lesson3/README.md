@@ -185,7 +185,7 @@ Pub/sub is trivial to implement in Akka.NET and it's a pattern you can feel comf
 Now that you're familiar with how the `Scheduler` works, lets put it to use and make our charting UI reactive!
 
 ## Exercise
-**HEADS UP:** This section is where 90% of the work happens in all of Unit 2. We're going to add a few new actors who are responsible for setting up pub/sub relationships with the `ChartingActor` in order to graph `PeformanceCounter` data at regular intervals.
+**HEADS UP:** This section is where 90% of the work happens in all of Unit 2. We're going to add a few new actors who are responsible for setting up pub/sub relationships with the `ChartingActor` in order to graph `PerformanceCounter` data at regular intervals.
 
 ### Step 1 - Delete the "Add Series" Button and Click Handler from Lesson 2
 
@@ -444,22 +444,22 @@ Well, we've got an actor that takes an `IDisposable` object as a parameter. So w
 
 What happens when the `PerformanceCounterActor` needs to restart?
 
-**Every time the `PeformanceCounterActor` attempts to restart it will re-use its original constructor arguments, which includes reference types**. If we re-use the same reference to the now-`Disposed` `PerformanceCounter`, the actor will crash repeatedly. Until its parent decides to just kill it altogether.
+**Every time the `PerformanceCounterActor` attempts to restart it will re-use its original constructor arguments, which includes reference types**. If we re-use the same reference to the now-`Disposed` `PerformanceCounter`, the actor will crash repeatedly. Until its parent decides to just kill it altogether.
 
-A better technique is to pass a factory function that `PerformanceCounterActor` can use to get a fresh instance of its `PeformanceCounter`. That's why we use a `Func<PerformanceCounter>` in the constructor, which gets invoked during the actor's `PreStart()` lifecycle method.
+A better technique is to pass a factory function that `PerformanceCounterActor` can use to get a fresh instance of its `PerformanceCounter`. That's why we use a `Func<PerformanceCounter>` in the constructor, which gets invoked during the actor's `PreStart()` lifecycle method.
 
 ```csharp
 // create a new instance of the performance counter from factory that was passed in
 _counter = _performanceCounterGenerator();
 ```
 
-Because our `PeformanceCounter` is `IDisposable`, we also need to clean up the `PeformanceCounter` instance inside the `PostStop` lifecycle method of the actor.
+Because our `PerformanceCounter` is `IDisposable`, we also need to clean up the `PerformanceCounter` instance inside the `PostStop` lifecycle method of the actor.
 
 We already know that we're going to get a fresh instance of that counter when the actor restarts, so we want to prevent resource leaks. This is how we do that:
 
 ```csharp
 // Actors/PerformanceCounterActor.cs
-// prevent resource leaks by disposing of our current PeformanceCounter
+// prevent resource leaks by disposing of our current PerformanceCounter
 protected override void PostStop()
 {
     try
@@ -502,8 +502,8 @@ else if (message is UnsubscribeCounter)
 
 In this lesson, `PerformanceCounterActor` only has one subscriber (`ChartingActor`, from inside `Main.cs`) but with a little re-architecting you could have these actors publishing their `PeformanceCounter` data to multiple recipients. Maybe that's a do-it-yourself exercise you can try later? ;)
 
-#### How did we schedule publishing of `PeformanceCounter` data?
-Inside the `PreStart` lifecycle method, we used the `Context` object to get access to the `Scheduler`, and then we had `PeformanceCounterActor` send itself a `GatherMetrics` method once every 250 milliseconds.
+#### How did we schedule publishing of `PerformanceCounter` data?
+Inside the `PreStart` lifecycle method, we used the `Context` object to get access to the `Scheduler`, and then we had `PerformanceCounterActor` send itself a `GatherMetrics` method once every 250 milliseconds.
 
 This causes `PeformanceCounterActor` to fetch data every 250ms and publish it to `ChartingActor`, giving us a live graph with a frame rate of 4 FPS.
 
